@@ -46,13 +46,15 @@ typedef CONST BYTE *PCBYTE;
                             op(SHA256)  \
                             op(SHA512)  \
                             op(SHA3_256)\
-                            op(SHA3_512)
+                            op(SHA3_512)\
+                            op(CRC64)
 // In approximate order from longest to shortest compute time
 #define FOR_EACH_HASH_R(op) op(SHA512)  \
                             op(SHA256)  \
                             op(SHA3_512)\
                             op(SHA3_256)\
                             op(SHA1)    \
+                            op(CRC64)   \
                             op(CRC32)   \
                             op(MD5)
 
@@ -68,9 +70,10 @@ enum hash_algorithm {
     SHA256,
     SHA512,
     SHA3_256,
-    SHA3_512
+    SHA3_512,
+    CRC64
 };
-#define NUM_HASHES SHA3_512
+#define NUM_HASHES CRC64
 
 // The default hash algorithm to use when creating a checksum file
 #define DEFAULT_HASH_ALGORITHM SHA256
@@ -86,7 +89,8 @@ enum hash_algorithm {
 #define WHEX_CHECKSHA512    (1UL << (SHA512 - 1))
 #define WHEX_CHECKSHA3_256  (1UL << (SHA3_256 - 1))
 #define WHEX_CHECKSHA3_512  (1UL << (SHA3_512 - 1))
-#define WHEX_CHECKLAST      WHEX_CHECKSHA3_512
+#define WHEX_CHECKCRC64     (1UL << (CRC64 - 1))
+#define WHEX_CHECKLAST      WHEX_CHECKCRC64
 
 // Bitwise representation of the hash algorithms, by digest length (in bits)
 #define WHEX_ALL            ((1UL << NUM_HASHES) - 1)
@@ -106,6 +110,7 @@ enum hash_algorithm {
 
 // The digest lengths of the hash algorithms
 #define CRC32_DIGEST_LENGTH         4
+#define CRC64_DIGEST_LENGTH         8
 #define MD5_DIGEST_LENGTH           16
 #define SHA1_DIGEST_LENGTH          20
 #define SHA224_DIGEST_LENGTH        28
@@ -118,6 +123,7 @@ enum hash_algorithm {
 
 // The minimum string length required to hold the hex digest strings
 #define CRC32_DIGEST_STRING_LENGTH  (CRC32_DIGEST_LENGTH  * 2 + 1)
+#define CRC64_DIGEST_STRING_LENGTH  21
 #define MD5_DIGEST_STRING_LENGTH    (MD5_DIGEST_LENGTH    * 2 + 1)
 #define SHA1_DIGEST_STRING_LENGTH   (SHA1_DIGEST_LENGTH   * 2 + 1)
 #define SHA224_DIGEST_STRING_LENGTH (SHA224_DIGEST_LENGTH * 2 + 1)
@@ -130,6 +136,7 @@ enum hash_algorithm {
 
 // Hash file extensions
 #define HASH_EXT_CRC32          _T(".sfv")
+#define HASH_EXT_CRC64          _T(".crc64")
 #define HASH_EXT_MD5            _T(".md5")
 #define HASH_EXT_SHA1           _T(".sha1")
 #define HASH_EXT_SHA256         _T(".sha256")
@@ -142,6 +149,7 @@ extern LPCTSTR g_szHashExtsTab[NUM_HASHES + 1];
 
 // Hash names
 #define HASH_NAME_CRC32         _T("CRC-32")
+#define HASH_NAME_CRC64         _T("CRC-64 (ECMA)")
 #define HASH_NAME_MD5           _T("MD5")
 #define HASH_NAME_SHA1          _T("SHA-1")
 #define HASH_NAME_SHA256        _T("SHA-256")
@@ -151,6 +159,7 @@ extern LPCTSTR g_szHashExtsTab[NUM_HASHES + 1];
 
 // Right-justified Hash names
 #define HASH_RNAME_CRC32        _T("  CRC-32")
+#define HASH_RNAME_CRC64        _T("CRC-64 (ECMA)")
 #define HASH_RNAME_MD5          _T("     MD5")
 #define HASH_RNAME_SHA1         _T("   SHA-1")
 #define HASH_RNAME_SHA256       _T(" SHA-256")
@@ -200,6 +209,7 @@ typedef struct _SHA2_CTX {
 
 
 UINT32 crc32( UINT32 uInitial, PCBYTE pbIn, UINT cbIn );
+UINT64 crc64( UINT64 uInitial, PCBYTE pbIn, UINT cbIn );
 
 void MD5Init( PMD5_CTX pContext );
 void MD5Update( PMD5_CTX pContext, PCBYTE pbIn, UINT cbIn );
@@ -225,6 +235,11 @@ typedef union {
 	UINT32 state;
 	BYTE result[CRC32_DIGEST_LENGTH];
 } WHCTXCRC32, *PWHCTXCRC32;
+
+typedef union {
+	UINT64 state;
+	BYTE result[CRC64_DIGEST_LENGTH];
+} WHCTXCRC64, *PWHCTXCRC64;
 
 #define  WHCTXMD5  MD5_CTX
 #define PWHCTXMD5 PMD5_CTX
@@ -267,6 +282,21 @@ __inline void WHAPI WHUpdateCRC32( PWHCTXCRC32 pContext, PCBYTE pbIn, UINT cbIn 
 __inline void WHAPI WHFinishCRC32( PWHCTXCRC32 pContext )
 {
 	pContext->state = SwapV32(pContext->state);
+}
+
+__inline void WHAPI WHInitCRC64( PWHCTXCRC64 pContext )
+{
+	pContext->state = 0;
+}
+
+__inline void WHAPI WHUpdateCRC64( PWHCTXCRC64 pContext, PCBYTE pbIn, UINT cbIn )
+{
+	pContext->state = crc64(pContext->state, pbIn, cbIn);
+}
+
+__inline void WHAPI WHFinishCRC64( PWHCTXCRC64 pContext )
+{
+	(void)pContext;
 }
 
 #define WHInitMD5 MD5Init
@@ -333,6 +363,7 @@ PTSTR WHAPI WHByteToHex( PBYTE pbSrc, PTSTR pszDest, UINT cchHex, UINT8 uCaseMod
 
 typedef struct {
     TCHAR szHexCRC32[CRC32_DIGEST_STRING_LENGTH];
+    TCHAR szHexCRC64[CRC64_DIGEST_STRING_LENGTH];
     TCHAR szHexMD5[MD5_DIGEST_STRING_LENGTH];
     TCHAR szHexSHA1[SHA1_DIGEST_STRING_LENGTH];
     TCHAR szHexSHA256[SHA256_DIGEST_STRING_LENGTH];
@@ -345,6 +376,7 @@ typedef struct {
 // Align all the hash contexts to avoid false sharing (of L1/2 cache lines in multi-core systems)
 typedef struct {
 	__declspec(align(64)) WHCTXCRC32  ctxCRC32;
+	__declspec(align(64)) WHCTXCRC64  ctxCRC64;
 	__declspec(align(64)) WHCTXMD5    ctxMD5;
 	__declspec(align(64)) WHCTXSHA1   ctxSHA1;
 	__declspec(align(64)) WHCTXSHA256 ctxSHA256;

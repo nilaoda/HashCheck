@@ -122,6 +122,7 @@ typedef struct {
 __forceinline PBYTE WINAPI HashVerifyLoadData( PHASHVERIFYCONTEXT phvctx );
 VOID WINAPI HashVerifyParseData( PHASHVERIFYCONTEXT phvctx );
 BOOL WINAPI ValidateHexSequence( PTSTR psz, UINT cch );
+BOOL WINAPI ValidateDecimalSequence( PTSTR psz, PTSTR* ppszEnd );
 
 // Worker thread
 VOID __fastcall HashVerifyWorkerMain( PHASHVERIFYCONTEXT phvctx );
@@ -275,6 +276,7 @@ VOID WINAPI HashVerifyParseData( PHASHVERIFYCONTEXT phvctx )
 
 	UINT cchChecksum;             // Expected length of the checksum in TCHARs
 	BOOL bReverseFormat = FALSE;  // TRUE if using SFV's format of putting the checksum last
+	BOOL bDecimalChecksum = FALSE;
 	BOOL bLinesRemaining = TRUE;  // TRUE if we have not reached the end of the data
 
 	// Try to determine the file type from the extension
@@ -283,20 +285,28 @@ VOID WINAPI HashVerifyParseData( PHASHVERIFYCONTEXT phvctx )
 
 		if (pszExt)
 		{
-            do  // loops once; only here so there's something to break out of
-            {
+			if (StrCmpI(pszExt, HASH_EXT_CRC64) == 0)
+			{
+				phvctx->whctxFlags = WHEX_CHECKCRC64;
+				bDecimalChecksum = TRUE;
+				cchChecksum = 0;
+			}
+			else
+			{
+				do
+				{
 #define HASH_VERIFY_EXT_TYPE(alg)                           \
-                if (StrCmpI(pszExt, HASH_EXT_##alg) == 0)   \
-                {                                           \
-                    phvctx->whctxFlags = WHEX_CHECK##alg;   \
-                    cchChecksum = alg##_DIGEST_LENGTH * 2;  \
-                    break;                                  \
-                }
-                FOR_EACH_HASH(HASH_VERIFY_EXT_TYPE)
-            } while (FALSE);
+					if (StrCmpI(pszExt, HASH_EXT_##alg) == 0)   \
+					{                                           \
+						phvctx->whctxFlags = WHEX_CHECK##alg;   \
+						cchChecksum = alg##_DIGEST_LENGTH * 2;  \
+						break;                                  \
+					}
+					FOR_EACH_HASH(HASH_VERIFY_EXT_TYPE)
+				} while (FALSE);
+			}
 
-            // Special case for CRC-32
-            if (phvctx->whctxFlags == WHEX_CHECKCRC32)
+			if (phvctx->whctxFlags == WHEX_CHECKCRC32)
 				bReverseFormat = TRUE;
 		}
 	}
@@ -358,6 +368,20 @@ VOID WINAPI HashVerifyParseData( PHASHVERIFYCONTEXT phvctx )
 		// Step 2b: All other file formats
 		else
 		{
+			if (bDecimalChecksum && phvctx->whctxFlags == WHEX_CHECKCRC64)
+			{
+				PTSTR pszChecksumEnd = NULL;
+				if (ValidateDecimalSequence(pszStartOfLine, &pszChecksumEnd))
+				{
+					pszChecksum = pszStartOfLine;
+					pszStartOfLine = pszChecksumEnd + 1;
+					while (*pszStartOfLine == TEXT(' '))
+						++pszStartOfLine;
+					if (*pszStartOfLine)
+						pszFileName = pszStartOfLine;
+				}
+			}
+
 			// If we do not know the type yet, make a stab at detecting it
 			if (phvctx->whctxFlags == 0)
 			{
@@ -393,19 +417,20 @@ VOID WINAPI HashVerifyParseData( PHASHVERIFYCONTEXT phvctx )
 				}
 			}
 
-			// Parse the line
-			if ( phvctx->whctxFlags && pszEndOfLine > pszStartOfLine + cchChecksum &&
-			     ValidateHexSequence(pszStartOfLine, cchChecksum) )
+			if (!bDecimalChecksum)
 			{
-				pszChecksum = pszStartOfLine;
-				pszStartOfLine += cchChecksum + 1;
+				if ( phvctx->whctxFlags && pszEndOfLine > pszStartOfLine + cchChecksum &&
+				     ValidateHexSequence(pszStartOfLine, cchChecksum) )
+				{
+					pszChecksum = pszStartOfLine;
+					pszStartOfLine += cchChecksum + 1;
 
-				// Skip over spaces between the checksum and filename
-				while (*pszStartOfLine == TEXT(' '))
-					++pszStartOfLine;
+					while (*pszStartOfLine == TEXT(' '))
+						++pszStartOfLine;
 
-				if (*pszStartOfLine)
-					pszFileName = pszStartOfLine;
+					if (*pszStartOfLine)
+						pszFileName = pszStartOfLine;
+				}
 			}
 		}
 
@@ -483,6 +508,29 @@ BOOL WINAPI ValidateHexSequence( PTSTR psz, UINT cch )
 	if (*psz == 0 || *psz == TEXT('\n') || *psz == TEXT(' '))
 	{
 		*psz = 0;
+		return(TRUE);
+	}
+
+	return(FALSE);
+}
+
+BOOL WINAPI ValidateDecimalSequence( PTSTR psz, PTSTR* ppszEnd )
+{
+	UINT cch = 0;
+	while (*psz >= TEXT('0') && *psz <= TEXT('9') && cch < 20)
+	{
+		++psz;
+		++cch;
+	}
+
+	if (cch == 0)
+		return(FALSE);
+
+	if (*psz == 0 || *psz == TEXT('\n') || *psz == TEXT(' '))
+	{
+		*psz = 0;
+		if (ppszEnd)
+			*ppszEnd = psz;
 		return(TRUE);
 	}
 

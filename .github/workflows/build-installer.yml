@@ -1,0 +1,41 @@
+name: build-installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: NuGet/setup-nuget@v1
+      - name: Restore packages
+        run: nuget restore
+      - name: Build Win32 Release
+        run: msbuild HashCheck.sln /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v143
+      - name: Build x64 Release
+        run: msbuild HashCheck.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143
+      - name: Install NSIS
+        run: choco install nsis -y
+      - name: Build installer
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\NSIS\makensis.exe" installer\HashCheck.nsi'
+      - name: Generate installer checksum
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path installer -Filter "HashCheckSetup-v*.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Installer not found" }
+          $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLower()
+          "$hash *$($installer.Name)" | Out-File -FilePath "$($installer.FullName).sha256" -Encoding ascii
+      - name: Upload installer artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: hashcheck-installer
+          path: |
+            installer/HashCheckSetup-v*.exe
+            installer/HashCheckSetup-v*.exe.sha256

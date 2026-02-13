@@ -1,4 +1,4 @@
-﻿SetCompressor /FINAL /SOLID lzma
+SetCompressor /FINAL /SOLID lzma
 
 !include MUI2.nsh
 !include x64.nsh
@@ -53,13 +53,13 @@ FunctionEnd
 !insertmacro MUI_LANGUAGE "Ukrainian"
 !insertmacro MUI_LANGUAGE "Catalan"
 
-VIProductVersion "2.4.0.55"
+VIProductVersion "2.4.0.56"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "HashCheck Shell Extension"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "2.4.0.55"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "2.4.0.56"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "Installer distributed from https://github.com/gurnec/HashCheck/releases"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright © 2008-2016 Kai Liu, Christopher Gurnee, Tim Schlueter, et al. All rights reserved."
 VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "Installer (x86/x64) from https://github.com/gurnec/HashCheck/releases"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "2.4.0.55"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "2.4.0.56"
 
 ; With solid compression, files that are required before the
 ; actual installation should be stored first in the data block,
@@ -71,17 +71,14 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "2.4.0.55"
 ;
 Section
 
-    GetTempFileName $0
-
     ${If} ${RunningX64}
         ${DisableX64FSRedirection}
 
         ; Install the 64-bit dll
-        File /oname=$0 ..\Bin\x64\Release\HashCheck.dll
-        ExecWait 'regsvr32 /i /n /s "$0"'
+        SetOutPath $SYSDIR\ShellExt
+        File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\x64\Release\HashCheck.dll
+        ExecWait 'regsvr32 /i /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
         IfErrors abort_on_error
-        Delete $0
-
         ; One of these 64-bit dlls exists and is undeletable if and
         ; only if it was in use and therefore a reboot is now required
         Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.0
@@ -98,17 +95,17 @@ Section
         ${EnableX64FSRedirection}
 
         ; Install the 32-bit dll (the 64-bit dll handles uninstallation for both)
-        File /oname=$0 ..\Bin\Win32\Release\HashCheck.dll
-        ExecWait 'regsvr32 /i:"NoUninstall" /n /s "$0"'
+        SetOutPath $SYSDIR\ShellExt
+        File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\Win32\Release\HashCheck.dll
+        ExecWait 'regsvr32 /i:"NoUninstall" /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
         IfErrors abort_on_error
     ${Else}
         ; Install the 32-bit dll
-        File /oname=$0 ..\Bin\Win32\Release\HashCheck.dll
-        ExecWait 'regsvr32 /i /n /s "$0"'
+        SetOutPath $SYSDIR\ShellExt
+        File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\Win32\Release\HashCheck.dll
+        ExecWait 'regsvr32 /i /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
         IfErrors abort_on_error	
     ${EndIf}
-
-    Delete $0
 
     ; One of these 32-bit dlls exists and is undeletable if and
     ; only if it was in use and therefore a reboot is now required
@@ -126,7 +123,6 @@ Section
     Return
 
     abort_on_error:
-        Delete $0
         IfSilent +2
         MessageBox MB_ICONSTOP|MB_OK "An unexpected error occurred during installation"
         Quit
@@ -134,5 +130,8 @@ Section
 SectionEnd
 
 Function .onInit
+    SetShellVarContext current
+    System::Call 'kernel32::SetEnvironmentVariable(t, t) i("TEMP", "$LOCALAPPDATA\\Temp")'
+    System::Call 'kernel32::SetEnvironmentVariable(t, t) i("TMP", "$LOCALAPPDATA\\Temp")'
     !insertmacro MUI_LANGDLL_DISPLAY
 FunctionEnd

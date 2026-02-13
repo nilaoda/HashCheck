@@ -12,6 +12,7 @@
  **/
 
 #include "WinHash.h"
+#include <Strsafe.h>
 #ifdef USE_PPL
 #include <ppl.h>
 #endif
@@ -161,11 +162,23 @@ VOID WHAPI WHUpdateEx( PWHCTXEX pContext, PCBYTE pbIn, UINT cbIn )
 
 VOID WHAPI WHFinishEx( PWHCTXEX pContext, PWHRESULTEX pResults )
 {
+#define WIN_HASH_FINISH_CONVERT_HEX(alg) \
+    WHByteToHex(pContext->ctx##alg.result, pResults->szHex##alg, alg##_DIGEST_LENGTH * 2, pContext->uCaseMode);
+#define WIN_HASH_FINISH_CONVERT_CRC32  WIN_HASH_FINISH_CONVERT_HEX(CRC32)
+#define WIN_HASH_FINISH_CONVERT_MD5    WIN_HASH_FINISH_CONVERT_HEX(MD5)
+#define WIN_HASH_FINISH_CONVERT_SHA1   WIN_HASH_FINISH_CONVERT_HEX(SHA1)
+#define WIN_HASH_FINISH_CONVERT_SHA256 WIN_HASH_FINISH_CONVERT_HEX(SHA256)
+#define WIN_HASH_FINISH_CONVERT_SHA512 WIN_HASH_FINISH_CONVERT_HEX(SHA512)
+#define WIN_HASH_FINISH_CONVERT_SHA3_256 WIN_HASH_FINISH_CONVERT_HEX(SHA3_256)
+#define WIN_HASH_FINISH_CONVERT_SHA3_512 WIN_HASH_FINISH_CONVERT_HEX(SHA3_512)
+#define WIN_HASH_FINISH_CONVERT_CRC64 \
+    StringCchPrintf(pResults->szHexCRC64, sizeof(pResults->szHexCRC64) / sizeof(TCHAR), TEXT("%I64u"), (unsigned __int64)pContext->ctxCRC64.state);
+
 #define WIN_HASH_FINISH_op(alg)               \
     if (pContext->dwFlags & WHEX_CHECK##alg)  \
     {                                         \
         WHFinish##alg(&pContext->ctx##alg);   \
-        WHByteToHex(pContext->ctx##alg.result, pResults->szHex##alg, alg##_DIGEST_LENGTH * 2, pContext->uCaseMode);  \
+        WIN_HASH_FINISH_CONVERT_##alg         \
     }
     FOR_EACH_HASH(WIN_HASH_FINISH_op)
 
