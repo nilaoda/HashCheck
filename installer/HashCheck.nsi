@@ -6,7 +6,10 @@ SetCompressor /FINAL /SOLID lzma
 Unicode true
 
 Name "HashCheck"
-OutFile "HashCheckSetup-v2.4.0.exe"
+!ifndef OUTFILE_SUFFIX
+!define OUTFILE_SUFFIX ""
+!endif
+OutFile "HashCheckSetup-v2.4.0.56${OUTFILE_SUFFIX}.exe"
 
 RequestExecutionLevel admin
 ManifestSupportedOS all
@@ -71,41 +74,48 @@ VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "2.4.0.56"
 ;
 Section
 
-    ${If} ${RunningX64}
-        ${DisableX64FSRedirection}
-
-        ; Install the 64-bit dll
+    !ifdef ARCH_ARM64
         SetOutPath $SYSDIR\ShellExt
-        File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\x64\Release\HashCheck.dll
+        File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\ARM64\Release\HashCheck.dll
         ExecWait 'regsvr32 /i /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
         IfErrors abort_on_error
-        ; One of these 64-bit dlls exists and is undeletable if and
-        ; only if it was in use and therefore a reboot is now required
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.0
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.1
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.2
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.3
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.4
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.5
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.6
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.7
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.8
-        Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.9
+    !else
+        ${If} ${RunningX64}
+            ${DisableX64FSRedirection}
 
-        ${EnableX64FSRedirection}
+            ; Install the 64-bit dll
+            SetOutPath $SYSDIR\ShellExt
+            File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\x64\Release\HashCheck.dll
+            ExecWait 'regsvr32 /i /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
+            IfErrors abort_on_error
+            ; One of these 64-bit dlls exists and is undeletable if and
+            ; only if it was in use and therefore a reboot is now required
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.0
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.1
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.2
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.3
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.4
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.5
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.6
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.7
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.8
+            Delete /REBOOTOK $SYSDIR\ShellExt\HashCheck.dll.9
 
-        ; Install the 32-bit dll (the 64-bit dll handles uninstallation for both)
-        SetOutPath $SYSDIR\ShellExt
-        File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\Win32\Release\HashCheck.dll
-        ExecWait 'regsvr32 /i:"NoUninstall" /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
-        IfErrors abort_on_error
-    ${Else}
-        ; Install the 32-bit dll
-        SetOutPath $SYSDIR\ShellExt
-        File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\Win32\Release\HashCheck.dll
-        ExecWait 'regsvr32 /i /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
-        IfErrors abort_on_error	
-    ${EndIf}
+            ${EnableX64FSRedirection}
+
+            ; Install the 32-bit dll (the 64-bit dll handles uninstallation for both)
+            SetOutPath $SYSDIR\ShellExt
+            File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\Win32\Release\HashCheck.dll
+            ExecWait 'regsvr32 /i:"NoUninstall" /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
+            IfErrors abort_on_error
+        ${Else}
+            ; Install the 32-bit dll
+            SetOutPath $SYSDIR\ShellExt
+            File /oname=$SYSDIR\ShellExt\HashCheck.dll ..\Bin\Win32\Release\HashCheck.dll
+            ExecWait 'regsvr32 /i /n /s "$SYSDIR\ShellExt\HashCheck.dll"'
+            IfErrors abort_on_error	
+        ${EndIf}
+    !endif
 
     ; One of these 32-bit dlls exists and is undeletable if and
     ; only if it was in use and therefore a reboot is now required

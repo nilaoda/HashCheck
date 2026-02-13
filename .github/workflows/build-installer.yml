@@ -20,18 +20,25 @@ jobs:
         run: msbuild HashCheck.sln /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v143
       - name: Build x64 Release
         run: msbuild HashCheck.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143
+      - name: Build ARM64 Release
+        run: msbuild HashCheck.sln /p:Configuration=Release /p:Platform=ARM64 /p:PlatformToolset=v143
       - name: Install NSIS
         run: choco install nsis -y
-      - name: Build installer
+      - name: Build installer (x64)
         shell: pwsh
-        run: '& "C:\Program Files (x86)\NSIS\makensis.exe" installer\HashCheck.nsi'
+        run: '& "C:\Program Files (x86)\NSIS\makensis.exe" /DOUTFILE_SUFFIX=-x64 installer\HashCheck.nsi'
+      - name: Build installer (arm64)
+        shell: pwsh
+        run: '& "C:\Program Files (x86)\NSIS\makensis.exe" /DARCH_ARM64 /DOUTFILE_SUFFIX=-arm64 installer\HashCheck.nsi'
       - name: Generate installer checksum
         shell: pwsh
         run: |
-          $installer = Get-ChildItem -Path installer -Filter "HashCheckSetup-v*.exe" | Select-Object -First 1
-          if (-not $installer) { throw "Installer not found" }
-          $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLower()
-          "$hash *$($installer.Name)" | Out-File -FilePath "$($installer.FullName).sha256" -Encoding ascii
+          $installers = Get-ChildItem -Path installer -Filter "HashCheckSetup-v*.exe"
+          if (-not $installers) { throw "Installer not found" }
+          foreach ($installer in $installers) {
+            $hash = (Get-FileHash -Algorithm SHA256 $installer.FullName).Hash.ToLower()
+            "$hash *$($installer.Name)" | Out-File -FilePath "$($installer.FullName).sha256" -Encoding ascii
+          }
       - name: Upload installer artifacts
         uses: actions/upload-artifact@v4
         with:

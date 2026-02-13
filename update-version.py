@@ -110,8 +110,11 @@ found_version_key_file    = 0
 with overwrite(r'installer\HashCheck.nsi', encoding='utf-8', newline='') as out_file:
     with open(r'installer\HashCheck.nsi.orig', encoding='utf-8', newline='') as in_file:
         for line in in_file:
-            (line, subs) = re.subn(r'^OutFile\s*"HashCheckSetup-v[\d.\w-]+.exe"',
-                                     'OutFile "HashCheckSetup-v' + full_version() + '.exe"', line)
+            def replace_outfile(match):
+                suffix = match.group(2) or ''
+                return 'OutFile "HashCheckSetup-v' + full_version() + suffix + '.exe"'
+            (line, subs) = re.subn(r'^OutFile\s*"HashCheckSetup-v[\d.\w-]+(\$\{OUTFILE_SUFFIX\})?\.exe"',
+                                     replace_outfile, line)
             found_outfile             += subs
             (line, subs) = re.subn(r'^VIProductVersion\s+"[\d.\w-]+"',
                                      'VIProductVersion "' + full_version() + '"', line)
