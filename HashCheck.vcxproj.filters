@@ -180,8 +180,5 @@
     <ResourceCompile Include="HashCheck.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
-    <ResourceCompile Include="HashCheckTranslations.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
   </ItemGroup>
 </Project>

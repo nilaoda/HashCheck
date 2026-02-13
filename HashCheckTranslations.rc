@@ -2,7 +2,10 @@
 // NOTE: This file is encoded in UTF-8.
 //
 
+#include <winresrc.h>
 #include "HashCheckTranslations.h"
+
+#pragma code_page(65001)
 
 // English
 STRINGTABLE LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US

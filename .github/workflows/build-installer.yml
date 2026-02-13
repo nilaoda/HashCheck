@@ -16,8 +16,6 @@ jobs:
       - uses: NuGet/setup-nuget@v1
       - name: Restore packages
         run: nuget restore
-      - name: Build Win32 Release
-        run: msbuild HashCheck.sln /p:Configuration=Release /p:Platform=Win32 /p:PlatformToolset=v143
       - name: Build x64 Release
         run: msbuild HashCheck.sln /p:Configuration=Release /p:Platform=x64 /p:PlatformToolset=v143
       - name: Build ARM64 Release
