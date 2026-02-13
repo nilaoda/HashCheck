@@ -159,7 +159,7 @@ extern LPCTSTR g_szHashExtsTab[NUM_HASHES + 1];
 
 // Right-justified Hash names
 #define HASH_RNAME_CRC32        _T("  CRC-32")
-#define HASH_RNAME_CRC64        _T("CRC-64 (ECMA)")
+#define HASH_RNAME_CRC64        _T("  CRC-64")
 #define HASH_RNAME_MD5          _T("     MD5")
 #define HASH_RNAME_SHA1         _T("   SHA-1")
 #define HASH_RNAME_SHA256       _T(" SHA-256")
