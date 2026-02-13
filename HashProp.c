@@ -649,7 +649,7 @@ VOID WINAPI HashPropUpdateResults( PHASHPROPCONTEXT phpctx, PHASHPROPITEM pItem 
         pszScratchAppend = SSChainNCpy3(                                        \
             pszScratchAppend,                                                   \
             HASH_RESULT_op(alg), sizeof(HASH_RESULT_op(alg))/sizeof(TCHAR) - 1, /* the "- 1" excludes the terminating NUL */ \
-            pItem->results.szHex##alg, alg##_DIGEST_LENGTH * 2,                 \
+            pItem->results.szHex##alg, (alg == CRC64 ? (CRC64_DIGEST_STRING_LENGTH - 1) : (alg##_DIGEST_LENGTH * 2)), \
             CRLF, CCH_CRLF                                                      \
         );
     FOR_EACH_HASH(HASH_RESULT_APPEND_op)
