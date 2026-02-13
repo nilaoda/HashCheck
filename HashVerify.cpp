@@ -986,6 +986,8 @@ VOID WINAPI HashVerifyDlgInit( PHASHVERIFYCONTEXT phvctx )
                     rc.left = 160 + 20;
                 else if (phvctx->whctxFlags & WHEX_ALL128)
                     rc.left = 128 + 20;
+                else if (phvctx->whctxFlags & WHEX_CHECKCRC64)
+                    rc.left =  64 + 20 + 40;  // extra size to accommodate the header labels
                 else if (phvctx->whctxFlags & WHEX_ALL32)
                     rc.left =  32 + 20 + 40;  // extra size to accommodate the header labels
 			}
