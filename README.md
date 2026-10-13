@@ -21,6 +21,16 @@ Tim Schlueter
 
 Microsoft Visual Studio 2015 (the free Community edition works well).
 
+#### CRC64 acceleration ####
+
+CRC64 remains compatible with Go's ECMA table / CRC-64/XZ (`123456789` = `995DC9BBDF1939FA`). Buffers of at least 256 bytes use 128-bit polynomial folding when the CPU supports it:
+
+- x86/x64: SSE2 + PCLMULQDQ, detected with CPUID and the Windows SSE2 feature flag.
+- ARM64: PMULL, detected with `IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE)`.
+- Unsupported CPUs and smaller buffers automatically use the existing byte-table algorithm. Lookup table initialization and CPU detection are synchronized with Windows `InitOnceExecuteOnce`.
+
+No global AVX or crypto compiler option is required. ARM64 builds require a modern Visual Studio ARM64 toolset and Windows SDK; the existing build workflow uses Visual Studio 2022 (`v143`). To build a scalar-only version for comparison, pass `/p:TempCDefines=CRC64_NO_SIMD` to MSBuild. Validate both builds on Windows, including empty files, block tails and incremental updates; the Windows DLL cannot be built or run on macOS directly.
+
 #### Localizations ####
 
 Translation strings are stored as string table resources. These tables can be modified by editing [HashCheckTranslations.rc](HashCheckTranslations.rc).

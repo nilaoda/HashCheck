@@ -9,7 +9,7 @@ Name "HashCheck"
 !ifndef OUTFILE_SUFFIX
 !define OUTFILE_SUFFIX ""
 !endif
-OutFile "HashCheckSetup-v2.4.0.56${OUTFILE_SUFFIX}.exe"
+OutFile "HashCheckSetup-v2.4.0.57${OUTFILE_SUFFIX}.exe"
 
 RequestExecutionLevel admin
 ManifestSupportedOS all
@@ -56,13 +56,13 @@ FunctionEnd
 !insertmacro MUI_LANGUAGE "Ukrainian"
 !insertmacro MUI_LANGUAGE "Catalan"
 
-VIProductVersion "2.4.0.56"
+VIProductVersion "2.4.0.57"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductName" "HashCheck Shell Extension"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "2.4.0.56"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "ProductVersion" "2.4.0.57"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "Comments" "Installer distributed from https://github.com/gurnec/HashCheck/releases"
 VIAddVersionKey /LANG=${LANG_ENGLISH} "LegalCopyright" "Copyright © 2008-2016 Kai Liu, Christopher Gurnee, Tim Schlueter, et al. All rights reserved."
 VIAddVersionKey /LANG=${LANG_ENGLISH} "FileDescription" "Installer (x64/ARM64) from https://github.com/gurnec/HashCheck/releases"
-VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "2.4.0.56"
+VIAddVersionKey /LANG=${LANG_ENGLISH} "FileVersion" "2.4.0.57"
 
 ; With solid compression, files that are required before the
 ; actual installation should be stored first in the data block,
